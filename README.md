@@ -38,11 +38,11 @@ This project leverages the power of the Google and Firebase ecosystem:
 
 ---
 
-## ⚙️ Installation and Configuration
+## Installation and Configuration
 
 For the **Firestore Backup Manager** to function correctly, you need to configure the **Script Properties** of your Google AppScript project.
 
-**🚨 Configuration Steps:**
+**Configuration Steps:**
 
 1.  **Clone or Copy the Code:** Transfer the code from this project to your Google AppScript environment.
 2.  **Configure the Service Account:** Create a **Service Account** in your Firebase/Google Cloud project and download the key's JSON file.
