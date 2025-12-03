@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Firestore Backup Manager</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0"
+    />
+    <?!= includeCSS('style'); ?>
+  </head>
+  <body>
+    <!-- ===== Section: Restore Data (Restore UI) ===== -->
+    <section id="restore_section" class="section">
+  <h1 class="title">Restore Data</h1>
+  
+  <div class="form-group">
+      <label for="restoreMode">Restore Mode:</label>
+      <select id="restoreMode" class="input-field">
+          <option value="overwrite">Overwrite existing collection (PATCH mode)</option>
+          <option value="new">Create a new collection</option>
+      </select>
+      <small class="hint">If you choose 'Create a new collection', provide a new collection name.</small>
+  </div>
+
+  <div class="form-group">
+      <label for="firebaseProjectId">Firebase Project ID:</label>
+      <input type="text" id="firebaseProjectId" class="input-field" placeholder="e.g. my-project-12345" required>
+  </div>
+  
+  <div class="form-group">
+      <label for="collectionName">Target Collection Name:</label>
+      <input type="text" id="collectionName" class="input-field" placeholder="e.g. restored_courses_db or courses_db" required>
+  </div>
+
+  <div class="form-group">
+      <label for="driveFileId">Drive File ID (Backup):</label>
+      <input type="text" id="driveFileId" class="input-field" placeholder="Paste the copied ID here (e.g. 1yE...tP)" required>
+  </div>
+  
+  <button class="button_class center" onclick="initiateRestore()">
+      <span class="material-symbols-outlined">settings_backup_restore</span> Start Restore
+  </button>
+
+  <p id="restoreStatusMessage" class="status-message-text">Waiting for action...</p>
+</section>
+
+    <!-- ===== Section: Manual Backup (Create new backup) ===== -->
+    <section class="section">
+      <h1 class="title">Create a new backup</h1>
+      <a
+        id="manual_backup"
+        class="button_class center"
+        title="Create a new backup in Google Drive"
+        onclick="manualBackupTrigger();"
+        ><span class="material-symbols-outlined"> backup </span></a
+      >
+      <h3 id="state"></h3>
+    </section>
+    
+    <!-- ===== Section: Saved Backups (List and pagination) ===== -->
+    <section class="section">
+      <h1 class="title">Saved backups</h1>
+      <ul id="saved_backups_list" class="list"></ul>
+
+      <div
+        id="pagination_controls"
+        style="margin-top: 15px; text-align: center"
+      ></div>
+    </section>
+    
+    <?!= includeJS('scripts'); ?>
+  </body>
+</html>

@@ -1,0 +1,270 @@
+<script>
+  // ===== Script: Firestore Backup Manager client-side logic =====
+  // Sections: Pagination, Backup trigger, Download, URL open, Copy ID, Fallback copy, Restore initiation
+  // --- Global State Variables for Pagination ---
+  const PAGE_SIZE = 10;
+  let currentPage = 0; // Current page index (0 is the first page)
+  let totalFiles = 0;
+
+  // -------------------------------------------------------------
+  // Function to show the error on the console
+  // -------------------------------------------------------------
+  function showError(e) {
+    console.log(`Apps Script Error: ${e}`);
+  }
+
+  // -------------------------------------------------------------
+  // Function to show the files on the folder when the app starts or page changes
+  // -------------------------------------------------------------
+  function showFiles() {
+    const start = currentPage * PAGE_SIZE; // Calculate the starting index
+
+    google.script.run
+      .withSuccessHandler(updateHtmlList) // updateHtmlList now receives the data object
+      .withFailureHandler(showError)
+      .getBackupFiles(start, PAGE_SIZE); // Send start index and limit
+  }
+
+  window.onload = showFiles;
+
+  // -------------------------------------------------------------
+  // Function to show the new files on the backup folder and render pagination
+  // -------------------------------------------------------------
+  function updateHtmlList(data) {
+    const elements = data.files;
+    totalFiles = data.total; // Update the global total file count
+
+    // Basic array validation
+    if (!elements || !Array.isArray(elements)) {
+      console.error("Data from server is not valid");
+      return;
+    }
+
+    let ul_element = document.getElementById("saved_backups_list");
+    let pagination_controls = document.getElementById("pagination_controls");
+
+    if (!ul_element) return;
+    ul_element.innerHTML = "";
+
+    // Handle empty state
+    if (totalFiles === 0) {
+      ul_element.innerHTML =
+        '<li class="backup_element">There are no backup files.</li>';
+      if (pagination_controls) pagination_controls.innerHTML = "";
+      return;
+    }
+
+    // --- Load the file list ---
+    for (let i = 0; i < elements.length; i++) {
+      let li = document.createElement("li");
+      li.className = "backup_element";
+      const fileData = elements[i];
+
+      // Check if essential data exists and render the list item
+      if (fileData && fileData.name && fileData.size && fileData.id) {
+        li.innerHTML = 
+          `<span class="file-name">${fileData.name}</span>
+           <span class="file-size" title="File size">${fileData.size}</span>`;
+
+        // 1. CREATE COPY BUTTON
+        let copyButton = document.createElement("button");
+        copyButton.innerHTML = `<span class="material-symbols-outlined">content_copy</span>`;
+        copyButton.className = "button_class";
+        copyButton.title = `Copy ID: ${fileData.id}`;
+        
+        // *** ASSIGN THE COPY FUNCTION ***
+        copyButton.onclick = function () {
+          copyFileId(fileData.id);
+        };
+
+        // 2. CREATE DOWNLOAD BUTTON
+        let downloadButton = document.createElement("button");
+        downloadButton.innerHTML = `<span class="material-symbols-outlined"> download </span>`;
+        downloadButton.className = "button_class";
+
+        downloadButton.onclick = function () {
+          downloadFile(fileData.id);
+        };
+
+        // 3. APPEND ELEMENTS TO THE LIST ITEM
+        li.appendChild(copyButton);
+        li.appendChild(downloadButton);
+        ul_element.appendChild(li);
+      }
+    }
+
+    // --- Generate Pagination Controls ---
+    if (pagination_controls) {
+      updatePaginationControls(pagination_controls);
+    }
+  }
+  // -------------------------------------------------------------
+  // Function to generate the pagination buttons
+  // -------------------------------------------------------------
+  function updatePaginationControls(container) {
+    container.innerHTML = ""; // Clear previous controls
+
+    const totalPages = Math.ceil(totalFiles / PAGE_SIZE);
+
+    // Previous Button
+    const prevButton = document.createElement("button");
+    prevButton.textContent = "Previous";
+    prevButton.className = "button_class";
+    // Disable if on the first page
+    prevButton.disabled = currentPage === 0;
+    prevButton.onclick = function () {
+      if (currentPage > 0) {
+        currentPage--;
+        showFiles(); // Reload the list with the new page index
+      }
+    };
+
+    // Page Indicator
+    const pageIndicator = document.createElement("span");
+    pageIndicator.textContent = `Page ${currentPage + 1} of ${totalPages}`;
+    pageIndicator.style.margin = "0 10px";
+
+    // Next Button
+    const nextButton = document.createElement("button");
+    nextButton.textContent = "Next";
+    nextButton.className = "button_class";
+    // Disable if on the last page
+    nextButton.disabled = currentPage >= totalPages - 1;
+    nextButton.onclick = function () {
+      if (currentPage < totalPages - 1) {
+        currentPage++;
+        showFiles(); // Reload the list with the new page index
+      }
+    };
+
+    // Append controls to the container
+    container.appendChild(prevButton);
+    container.appendChild(pageIndicator);
+    container.appendChild(nextButton);
+  }
+
+  // -------------------------------------------------------------
+  // Section: Manual Backup Trigger
+  // Function to create a new backup manually
+  // -------------------------------------------------------------
+
+  function manualBackupTrigger() {
+    // In case the backup ends successfully, we call showFiles function to update the html
+    google.script.run
+      .withSuccessHandler(function () {
+        showFiles();
+      })
+      .withFailureHandler(showError)
+      .backupFirestoreToDriveSimple();
+  }
+
+  // -------------------------------------------------------------
+  // Section: Download File
+  // Main function to initiate the download
+  // -------------------------------------------------------------
+  function downloadFile(fileId) {
+    console.log("Downloading file with ID:", fileId);
+
+    google.script.run
+      .withSuccessHandler(openUrl)
+      .withFailureHandler(showError)
+      .generateDownloadUrl(fileId);
+  }
+
+  // -------------------------------------------------------------
+  // Section: Open URL
+  // Function to open the download URL in a new tab
+  // -------------------------------------------------------------
+  function openUrl(url) {
+    if (url) {
+      // Open url on new tab to force the download
+      window.open(url, "_blank");
+    } else {
+      showError("Server did not provide a valid URL");
+    }
+  }
+
+
+  // -------------------------------------------------------------
+  // Section: Copy File ID
+  // Function to copy the Drive file ID to the clipboard
+  // -------------------------------------------------------------
+  function copyFileId(fileId) {
+    // Use the modern Clipboard API
+    navigator.clipboard.writeText(fileId)
+      .then(() => {
+        // Success feedback
+        console.log(`File ID copied: ${fileId}`);
+        // Simple alert for user feedback (optional)
+        alert(`ID copied: ${fileId}`);
+      })
+      .catch(err => {
+        // Error handling if permission is denied or the API fails
+        console.error('Failed to copy ID to clipboard:', err);
+        alert('Error copying the ID. Try manually.');
+      });
+  }
+
+  /**
+   * Section: Fallback Copy
+   * Fallback function for older browsers or when the modern Clipboard API fails.
+   * @param {HTMLElement} inputElement The input element containing the value.
+   */
+  function fallbackCopy(inputElement) {
+    // Select the content of the input field
+    inputElement.select();
+    inputElement.setSelectionRange(0, 99999); // For mobile devices
+    
+    try {
+      // Execute the copy command
+      document.execCommand('copy');
+      alert("Text copied (fallback method)!");
+    } catch (err) {
+      console.error('Fallback method also failed to copy:', err);
+      alert('Sorry, automatic copying is not supported by your browser.');
+    }
+  }
+
+  /**
+   * Section: Initiate Restore
+   * Client function to collect inputs and call the Apps Script restoration function.
+   */
+  function initiateRestore() {
+      const mode = document.getElementById('restoreMode').value;
+      const projectId = document.getElementById('firebaseProjectId').value.trim();
+      const collectionName = document.getElementById('collectionName').value.trim();
+      const fileId = document.getElementById('driveFileId').value.trim();
+      const statusDiv = document.getElementById('restoreStatusMessage');
+
+      // Updated validation
+      if (!collectionName || !fileId || !projectId) {
+          statusDiv.textContent = '❌ Error: All fields are required.';
+          return;
+      }
+
+      const confirmText = `⚠️ Restore Warning
+Are you sure you want to start the restore? This operation WILL OVERWRITE data.
+
+Project: ${projectId}
+Mode: ${mode === 'overwrite' ? 'OVERWRITE collection' : 'CREATE NEW collection'}
+Target Collection: ${collectionName}`;
+      
+      if (!confirm(confirmText)) {
+          statusDiv.textContent = 'Restore cancelled by the user.';
+          return;
+      }
+
+      statusDiv.textContent = '⏳ Starting restore... Please wait and DO NOT close this window.';
+      
+      google.script.run
+          .withSuccessHandler(function(result) {
+              statusDiv.textContent = `✅ Success: ${result}`;
+          })
+          .withFailureHandler(function(error) {
+              statusDiv.textContent = `❌ Critical Error: ${error.message || error}`;
+              console.error("Restoration failed:", error);
+          })
+          .executeRestore(mode, collectionName, fileId, projectId);
+  }
+
+</script>

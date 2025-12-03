@@ -1,0 +1,5 @@
+# clasp config file
+.clasp.json
+
+# metadata from Google AppScript
+appsscript.json
