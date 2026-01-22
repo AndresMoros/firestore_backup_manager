@@ -49,13 +49,24 @@
     <!-- ===== Section: Manual Backup (Create new backup) ===== -->
     <section class="section">
       <h1 class="title">Create a new backup</h1>
-      <a
+      <div class="form-group">
+        <label for="manualBackupCollection">Collection Name (optional - leave empty for default):</label>
+        <input
+          type="text"
+          id="manualBackupCollection"
+          class="input-field"
+          placeholder="e.g. courses_db"
+        />
+        <small class="hint">Enter the collection name you want to back up. If empty, will use the configured collection.</small>
+      </div>
+      <button
         id="manual_backup"
         class="button_class center"
         title="Create a new backup in Google Drive"
         onclick="manualBackupTrigger();"
-        ><span class="material-symbols-outlined"> backup </span></a
       >
+        <span class="material-symbols-outlined">backup</span> Create Backup
+      </button>
       <h3 id="state"></h3>
     </section>
     

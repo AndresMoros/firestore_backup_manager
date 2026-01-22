@@ -70,12 +70,13 @@ function extractFieldValue(field) {
  * and handles pagination with a token.
  * @param {string} accessToken The OAuth 2.0 Bearer token.
  * @param {string} nextPageToken Token to get the next page of results.
+ * @param {string} collectionName The collection name to fetch from.
  * @returns {object} Object with the data (documents) and the nextPageToken.
  */
-function fetchFirestorePage(props, accessToken, nextPageToken) {
-  const { firebase_project_id, collection_name } = props;
+function fetchFirestorePage(props, accessToken, nextPageToken, collectionName) {
+  const { firebase_project_id } = props;
 
-  let apiUrl = `https://firestore.googleapis.com/v1/projects/${firebase_project_id}/databases/(default)/documents/${collection_name}?pageSize=${PAGE_SIZE}`;
+  let apiUrl = `https://firestore.googleapis.com/v1/projects/${firebase_project_id}/databases/(default)/documents/${collectionName}?pageSize=${PAGE_SIZE}`;
 
   if (nextPageToken) {
     apiUrl += `&pageToken=${nextPageToken}`;
@@ -116,8 +117,9 @@ function fetchFirestorePage(props, accessToken, nextPageToken) {
 
 /**
  * Main function to perform the backup with Pagination.
+ * @param {string} [customCollection] Optional: Override the collection name from properties
  */
-function backupFirestoreToDrivePaginated() {
+function backupFirestoreToDrivePaginated(customCollection) {
   let accessToken;
   let allDocuments = [];
   let nextPageToken = null;
@@ -125,7 +127,13 @@ function backupFirestoreToDrivePaginated() {
 
   // Try to get properties first (might throw if SERVICE_ACCOUNT_KEY_JSON is invalid)
   const props = getProjectProperties();
-  const { collection_name } = props;
+  let collection_name = props.collection_name;
+  
+  // Override with custom collection if provided
+  if (customCollection && customCollection.length > 0) {
+    collection_name = customCollection;
+    Logger.log(`OVERRIDE: Using custom collection name: ${collection_name}`);
+  }
 
   try {
     // 0. AUTHENTICATION PHASE: Get the token first
@@ -135,8 +143,8 @@ function backupFirestoreToDrivePaginated() {
     Logger.log("PHASE 1: Starting Firestore data reading...");
     do {
       pageCount++;
-      // NEW CALL: Pass the access token
-      const pageResult = fetchFirestorePage(props, accessToken, nextPageToken);
+      // NEW CALL: Pass the access token and collection name
+      const pageResult = fetchFirestorePage(props, accessToken, nextPageToken, collection_name);
 
       const documents = pageResult.documents || [];
       nextPageToken = pageResult.nextPageToken || null;
@@ -224,7 +232,8 @@ function backupFirestoreToDrivePaginated() {
 
 // -------------------------------------------------------------
 // Compatibility function to run from the editor (Run this one!)
+// @param {string} [customCollection] Optional: Override the collection name
 // -------------------------------------------------------------
-function backupFirestoreToDriveSimple() {
-  backupFirestoreToDrivePaginated();
+function backupFirestoreToDriveSimple(customCollection) {
+  backupFirestoreToDrivePaginated(customCollection);
 }

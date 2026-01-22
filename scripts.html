@@ -149,13 +149,17 @@
   // -------------------------------------------------------------
 
   function manualBackupTrigger() {
+    // Get the collection name from the input field (optional)
+    const collectionInput = document.getElementById('manualBackupCollection');
+    const customCollection = collectionInput ? collectionInput.value.trim() : '';
+    
     // In case the backup ends successfully, we call showFiles function to update the html
     google.script.run
       .withSuccessHandler(function () {
         showFiles();
       })
       .withFailureHandler(showError)
-      .backupFirestoreToDriveSimple();
+      .backupFirestoreToDriveSimple(customCollection);
   }
 
   // -------------------------------------------------------------
