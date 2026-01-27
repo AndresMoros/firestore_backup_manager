@@ -2,8 +2,6 @@
 
 Google AppScript application with a web interface to back up Firestore in Firebase
 
----
-
 ## Project Overview
 
 **Firestore Backup Manager** is a robust and easy-to-use solution, developed in **Google AppScript**, that provides a web interface to **manage backups** of your **Firestore** collections in Firebase.
