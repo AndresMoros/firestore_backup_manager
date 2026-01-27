@@ -1,5 +1,6 @@
 # Firestore Backup Manager
-## Google AppScript application with a web interface to back up Firestore in Firebase
+
+Google AppScript application with a web interface to back up Firestore in Firebase
 
 ---
 
